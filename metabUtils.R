@@ -13,7 +13,8 @@ getMetNetworksForNodes<-function(nodelist,allpaths){
      # print(x)
     tmp <- tempfile()
     retrieveKGML(x, organism="hsa", destfile=tmp, method="auto", quiet=TRUE)
-    mapkG <- parseKGML2DataFrame(tmp,expandGenes=TRUE,genesOnly=FALSE)
+    mapkG<-data.frame()
+    try(mapkG <- parseKGML2DataFrame(tmp,expandGenes=TRUE,genesOnly=FALSE))
     if(nrow(mapkG)>0)
       mapkG$pathway=x
     if(length(intersect(union(mapkG$from,mapkG$to),nodelist))>0)

@@ -15,35 +15,25 @@ To run these commands we recommend RStudio, which you can install on your own ma
 ## Install packages, load data
 First we need to install the required packages. Try to run these commands ahead of the workshop as they can take a while.
 
-```{r load libraries, warning=FALSE, message=FALSE}
+```{r load libraries, warning=FALSE, message=FALSE,echo=FALSE}
 ##biodondoctur has a lot of biology related packages
 
+checkAndLoad<-function(libname,bc=FALSE){
+  print(libname)
+  if(!require(libname,character.only=TRUE)){
+    if(bc){
+      BiocManager::install(libname,character.only=TRUE)
+    }else{
+      install.packages(libnamecharacter.only=TRUE)
+    }
+    library(libname,character.only=TRUE)
+  }
+}
 ##readr helps reading files
-if(!require(readr)){
-  install.packages("readr")
-  library(readr)
-}
+lapply(c('readr','readxl','tidyr','limma','ggfortify','dplyr'),function(x) checkAndLoad(x))
+lapply(c('mixOmics'),function(x) checkAndLoad(x,TRUE))
 
-
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-##mixomics is one of the first tools we'll be using
-if(!require('mixOmics')){
-    Biocmanager::install('mixOmics')
-    library(mixOmics)
-}
-
-if(!require("FELLA")){
-  BiocManager::install("FELLA")
-  library(FELLA)
-}
-library(readxl)
-library(dplyr)
-library(tidyr)
 library(PCSF)
-library(limma)
-library(ggfortify)
 
 
 source("metabUtils.R")
@@ -58,7 +48,7 @@ First we have to load the data. We store the metabolomics and proteomics data in
 ```{r load data,message=FALSE, warning=FALSE}
 ##metabolomics
 ##this reads in the glioblastoma metabolites
-met <- readr::read_tsv("metabolome_pnnl.v4.0.20200430.tsv")
+met <- readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/metabolome_pnnl.v4.0.20200430.tsv")
 
 kegg_met<-met|>
   dplyr::select(KEGG,Metabolite)|>
@@ -88,24 +78,25 @@ if(length(missingm)>0)
 
 ```{r load samples info}
 ##need this to map the samples
-samps<-readr::read_tsv("sample_info.v4.0.20200430.tsv.gz")
-protmapping <- readxl::read_xlsx('GBM_TMT plexes_final.xlsx')
+samps<-readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/sample_info.v4.0.20200430.tsv.gz")
+protmapping <- readr::read_csv("GBM_TMT_plexes.csv")
 print(head(protmapping))
 ```
 
 
 ```{r load proteomics info}
 ##now the proteomics
-prot<-readr::read_tsv('GBM_PanCan_Proteome_UMich_UniProt_Sinai_observed_0205.tsv')|>
+prot<-readr::read_tsv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/GBM_PanCan_Proteome_UMich_UniProt_Sinai_observed_0205.tsv')|>
   tidyr::pivot_longer(cols=starts_with('CPT'),names_to='Aliquot ID',values_to='intensity')|>
   left_join(protmapping)|>
-  dplyr::select(ApprovedGeneSymbol,intensity,`CPTAC Participant ID`)|>
+  dplyr::select(ApprovedGeneSymbol,intensity,`CPTAC Participant ID`,Type)|>
   distinct()
 
 print(head(prot))
 
 ##move data to matrix for ploting and analysis
 pmat<-prot|>
+  dplyr::select(ApprovedGeneSymbol,intensity,`CPTAC Participant ID`)|>
   tidyr::pivot_wider(names_from='CPTAC Participant ID',values_from='intensity')|>
   tibble::column_to_rownames('ApprovedGeneSymbol')
 
@@ -148,8 +139,7 @@ mixOmics::plotIndiv(ppca,
           group=smat[ppats,]$tumor_normal,
           title='Proteomics separation of patients',
           legend.title='Sample type',legend=TRUE)
-#autoplot(mpca,data=smat[mpats,],colour='tumor_normal')+ggtitle("Clustering by metabolites")
-#autoplot(ppca,data=smat[ppats,],colour='tumor_normal')+ggtitle('Clustering by proteins')
+
 
 ```
 As you can see the tumor samples are far more distinct from normal 
@@ -204,7 +194,8 @@ ggplot(mres,aes(x=logFC,y=-1*log10(adj.P.Val),col=signif))+geom_point()+
 
 ```
 
-## mixOmics Integration
+## mixOmics Integration and variable selection
+
 Now that we analyzed the data separately we can evalute it in an integrated fashion using mixOmics. Hopefully Javi can provide some code that does this.
 
 ```{r mixomics}
@@ -224,47 +215,48 @@ cor(res1.pls$variates$X, res1.pls$variates$Y)
 
 diablo.met <- block.plsda(X, Y, ncomp = 5, design = design)
 
-set.seed(123) # For reproducibility, remove for your analyses
-
-
-##TODO: this is wrong, not sure what is happening here.
-perf.diablo.met = perf(diablo.met, validation = 'Mfold', folds = 3, nrepeat = 10)
-plot(perf.diablo.met)
-perf.diablo.met$choice.ncomp$WeightedVote
 
 #ncomp <- perf.diablo.tcga$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
 plotDiablo(diablo.met)
 
 
 ##can we use this to reduce the features?
-plotLoadings(diablo.met)
+plotLoadings(diablo.met,ndisplay=100)
 
 
 ```
+THis plots all the loadings used to distinguish the different sample types. If we want to focus on which metabolites and proteins are most impactful we can examine those that are most negative.
 
-## Enrichment based analysis with FELLA
-Has anyone done this?
+```{r sig loadings}
+  metloads<-subset(selectVar(diablo.met)$metabolomics$value,value.var< (-.05))|>
+  as.data.frame()|>
+  tibble::rownames_to_column('Metabolite')|>
+  left_join(kegg_met)
+  metweights<-abs(metloads$value.var)
+  names(metweights)<-metloads$Metabolite
+#  keggloads<-subset(kegg_met,Metabolite%in%rownames(metloads))
 
-```{r fella}
-
+  protloads<-subset(selectVar(diablo.met)$proteomics$value,value.var< (-.015))
+  protweights<-abs(protloads$value.var)
+  names(protweights)<-rownames(protloads)
 
 ```
-
 ## Network-based integration with OmicsIntegrator
 Now we can evaluate network approaches. For this approach we merge KEGG pathways with known protein-protein interaction from STRING. This generates a huge hairball of a network.
 
-```{r network approcches, warning=FALSE,message=FALSE}
+```{r network approacches, warning=FALSE,error=FALSE,message=FALSE}
 
 ##load in metabolic network
-allkeggpaths<-readr::read_csv('keggPathList.csv')|>
+allkeggpaths<-readr::read_csv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/keggPathList.csv')|>
   subset(Entry!='Entry')
 
 
 ##here we get the metabolic network for those features that are significant
-sigmet<-subset(mres,signif)|>rownames()
-sigkegg<-subset(kegg_met,Metabolite%in%sigmet)
+#sigmet<-subset(mres,signif)|>rownames()
+#sigkegg<-subset(kegg_met,Metabolite%in%sigmet)
+
 ##this is a full network for all proteins/metabolites
-fullNetwork<-getMetNetworksForNodes(sigkegg$compoundId,allkeggpaths$Entry)
+fullNetwork<-getMetNetworksForNodes(metloads$compoundId,allkeggpaths$Entry)
 
 
 fixedNetwork<-mapNetworkToHGNC(fullNetwork,kegg_met)
@@ -279,15 +271,17 @@ This is not really interpretable, regardless of where the metabolites and protei
 We can take the up-regulated (logFC>1.5) metabolites in tumors and map them to proteins, but the reduced network tends to be quite small, as many metabolites fail to map to metabolic pathways.
 
 ```{r metabolites only, warning=FALSE,message=FALSE}
-up_prot=subset(pres,signif)|>
-  subset(logFC>1.5)
+##here we filter for significance AND fold change
+#up_prot=subset(pres,signif)|>
+#  subset(logFC>1.5)
 
-up_met=subset(mres,logFC>0)
+#here we only filter for fold change
+#up_met=subset(mres,logFC>0)
 
-weights<-c(up_prot$logFC,up_met$logFC)
-names(weights)<-c(rownames(up_prot),rownames(up_met))
+#weights<-c(up_prot$logFC,up_met$logFC)
+#names(weights)<-c(rownames(up_prot),rownames(up_met))
 
-mnet<-PCSF_rand(ppi,weights[(nrow(up_prot)+1):length(weights)],n=10,b=5)
+mnet<-PCSF_rand(ppi,metweights,n=10,b=30,w=5)
 plot.PCSF(mnet)
 
 ```
@@ -299,13 +293,8 @@ However, we can add differentially expressed proteins to the list of 'weights' i
 ```{r met and protein}
 ##now get the weights and add to PCSF
 
-nres<-PCSF_rand(ppi,weights,n=10,b=.5)
+nres<-PCSF_rand(ppi,c(metweights,protweights),n=10,b=30)
 plot.PCSF(nres)
-
-
-#pnet<-PCSF_rand(ppi,weights[1:nrow(up_prot)],n=10,b=5)
-#plot.PCSF(pnet)
-
 
 
 ```
