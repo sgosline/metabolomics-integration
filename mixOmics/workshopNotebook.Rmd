@@ -30,10 +30,14 @@ checkAndLoad<-function(libname,bc=FALSE){
   }
 }
 ##readr helps reading files
-lapply(c('readr','readxl','tidyr','limma','ggfortify','dplyr'),function(x) checkAndLoad(x))
+lapply(c('readr','readxl','tidyr','limma','ggfortify','dplyr','remotes'),function(x) checkAndLoad(x))
 lapply(c('mixOmics'),function(x) checkAndLoad(x,TRUE))
 
-library(PCSF)
+
+if(!require(PCSF)){
+  remotes::install_github('sgosline/PCSF')
+  library(PCSF)
+  }
 
 
 source("metabUtils.R")
@@ -48,7 +52,7 @@ First we have to load the data. We store the metabolomics and proteomics data in
 ```{r load data,message=FALSE, warning=FALSE}
 ##metabolomics
 ##this reads in the glioblastoma metabolites
-met <- readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/metabolome_pnnl.v4.0.20200430.tsv")
+met <- readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/metabolome_pnnl.v4.0.20200430.tsv")
 
 kegg_met<-met|>
   dplyr::select(KEGG,Metabolite)|>
@@ -78,7 +82,7 @@ if(length(missingm)>0)
 
 ```{r load samples info}
 ##need this to map the samples
-samps<-readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/sample_info.v4.0.20200430.tsv.gz")
+samps<-readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/sample_info.v4.0.20200430.tsv.gz")
 protmapping <- readr::read_csv("GBM_TMT_plexes.csv")
 print(head(protmapping))
 ```
@@ -86,7 +90,7 @@ print(head(protmapping))
 
 ```{r load proteomics info}
 ##now the proteomics
-prot<-readr::read_tsv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/GBM_PanCan_Proteome_UMich_UniProt_Sinai_observed_0205.tsv')|>
+prot<-readr::read_tsv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/GBM_PanCan_Proteome_UMich_UniProt_Sinai_observed_0205.tsv')|>
   tidyr::pivot_longer(cols=starts_with('CPT'),names_to='Aliquot ID',values_to='intensity')|>
   left_join(protmapping)|>
   dplyr::select(ApprovedGeneSymbol,intensity,`CPTAC Participant ID`,Type)|>
@@ -247,7 +251,7 @@ Now we can evaluate network approaches. For this approach we merge KEGG pathways
 ```{r network approacches, warning=FALSE,error=FALSE,message=FALSE}
 
 ##load in metabolic network
-allkeggpaths<-readr::read_csv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/keggPathList.csv')|>
+allkeggpaths<-readr::read_csv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/keggPathList.csv')|>
   subset(Entry!='Entry')
 
 
