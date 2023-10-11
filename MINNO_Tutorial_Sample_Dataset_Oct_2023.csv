@@ -1,0 +1,15 @@
+﻿Compound,Group,Metabolomics_MSSA_6hr,Metabolomics_MRSA_6hr,Metabolomics_C_6hr
+Pyruvate,intracellular,868.0733333,1888.26,12.86009707
+pyruvate:ferredoxin 2-oxidoreductase (CoA-acetylating),link,7.593511216,4.183030436,1
+Citrate,intracellular,761.4166667,90.21333333,1762.048885
+citrate hydro-lyase (cis-aconitate-forming),link,5.739079163,3.657271408,1
+cis-Aconitate,intracellular,803.8398679,732.4434115,8.005712896
+isocitrate hydro-lyase (cis-aconitate-forming),link,4.687377938,4.983074167,1
+Isocitrate,intracellular,1206.22,6.586666667,2063.38
+Isocitrate:NADP+ oxidoreductase,link,5.785368325,4.057682495,1
+Succinate:CoA ligase (ADP-forming),link,4.687377938,4.983074167,1
+Succinate,intracellular,973.5512732,952.2254747,1448.89448
+succinate:quinone oxidoreductase,link,0.992880306,5.481820183,1
+Fumarate,intracellular,28.71666667,52.52333333,12.86009707
+(S)-malate hydro-lyase (fumarate-forming),link,1.750836018,1.407041251,1
+(S)-Malate,intracellular,588.4085563,629.1442106,1448.89448
