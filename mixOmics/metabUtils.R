@@ -7,8 +7,36 @@ if(!require('KEGGgraph')){
   library(KEGGgraph)
 }
 
+getFullNetwork<-function(allpaths){
+  allnodes<-lapply(allpaths,function(x){
+    print(x)
+    tmp <- tempfile()
+    mapkG<-data.frame()
+    subx=gsub('hsa','',x)
+    print(subx)
+    hasConnection <- RCurl::url.exists(getKGMLurl(subx))
+    if(hasConnection){
+      KEGGgraph::retrieveKGML(subx, organism="hsa", destfile=tmp, method="auto", quiet=TRUE)
+      mapkG <- KEGGgraph::parseKGML2DataFrame(tmp,expandGenes=TRUE,genesOnly=FALSE)
+      if(nrow(mapkG)>0)
+        mapkG$pathway=x
+    #  if(length(intersect(union(mapkG$from,mapkG$to),nodelist))>0)
+      return(mapkG)
+    }else{
+      message("no connection to KEGG")
+      return(mapkG)
+    }
+  })
+  fullnet<-do.call(rbind,allnodes)
+  print(paste('Retrieved network for',length(unique(fullnet$pathway)),'pathways'))
+  return(fullnet)
+
+
+}
+
 ##gets all kegg pathways that contain nodes in the nodelist
 getMetNetworksForNodes<-function(nodelist,allpaths){
+  print(paste('Retrieving KEGG pathways for ',length(nodelist),'metabolites and',length(allpaths),'pathways (this could take a while)'))
   allnodes<-lapply(allpaths,function(x){
      #print(x)
     tmp <- tempfile()
@@ -18,7 +46,7 @@ getMetNetworksForNodes<-function(nodelist,allpaths){
     hasConnection <- RCurl::url.exists(getKGMLurl(subx))
     if(hasConnection){
       KEGGgraph::retrieveKGML(subx, organism="hsa", destfile=tmp, method="auto", quiet=TRUE)
-      try(mapkG <- KEGGgraph::parseKGML2DataFrame(tmp,expandGenes=TRUE,genesOnly=FALSE))
+      mapkG <- KEGGgraph::parseKGML2DataFrame(tmp,expandGenes=TRUE,genesOnly=FALSE)
       if(nrow(mapkG)>0)
         mapkG$pathway=x
       if(length(intersect(union(mapkG$from,mapkG$to),nodelist))>0)

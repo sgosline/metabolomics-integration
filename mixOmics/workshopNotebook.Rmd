@@ -307,7 +307,7 @@ plotLoadings(diablo.met,ndisplay=100)
 This plots all the loadings used to distinguish the different sample types. If we want to focus on which metabolites and proteins are most impactful we can examine those that are most negative.
 
 ```{r sig loadings, warnings=FALSE,message=FALSE}
-  metloads<-subset(selectVar(diablo.met)$metabolomics$value,value.var< (-.05))|>
+  metloads<-subset(selectVar(diablo.met)$metabolomics$value,value.var< 0)|>
   as.data.frame()|>
   tibble::rownames_to_column('Metabolite')|>
   left_join(kegg_met)
@@ -327,17 +327,22 @@ This plots all the loadings used to distinguish the different sample types. If w
 Beyond the selection of individual proteins and metabolites, we want to evaluate how these interact with each other in the cell. To do so we collate two different biological network resources. First, we download the data from the [STRING database](http://string-db.org) that includes all physical interactions between proteins and their relative confidence score. Second, we use the [KEGGgraph](https://www.bioconductor.org/packages/release/bioc/html/KEGGgraph.html) R package to retrieve all the [KEGG pathways](https://www.kegg.jp/kegg/pathway.html) that include the detected metabolites.
 
 
-```{r network assumbly, warning=FALSE,error=FALSE,message=FALSE}
+```{r network assembly, warning=FALSE,error=FALSE,message=FALSE}
 
 ##load in metabolic network
-allkeggpaths<-readr::read_csv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/keggPathList.csv')|>
-  subset(Entry!='Entry')
 
+##i stored the network on github to save time
+fullNetwork<-readr::read_csv('kegg_paths_2024.csv')
 
-##this is a full network for all proteins/metabolites
-fullNetwork<-getMetNetworksForNodes(setdiff(metloads$compoundId,NA),allkeggpaths$Entry)
+##remove the pathways that dont contain the metabolites of interest
+withPaths<-subset(fullNetwork,from%in%metloads$compoundId)|>
+  rbind(subset(fullNetwork,to%in%metloads$compoundId))
+reducedNetwork<-subset(fullNetwork,pathway%in%withPaths$pathway)
 
-fixedNetwork<-mapNetworkToHGNC(fullNetwork,kegg_met)
+print(paste('Reducing metabolic network from',length(unique(fullNetwork$pathway)),'pathways to',length(unique(reducedNetwork$pathway))))
+
+##now move over to gene name and metabolite name
+fixedNetwork<-mapNetworkToHGNC(reducedNetwork,kegg_met)
 
 ppi <- addNetworkToProts(fixedNetwork)
 plot(ppi)
@@ -346,27 +351,21 @@ plot(ppi)
 The result is a hairball that is difficult to interpret, as there are too many nodes (molecules) and edges (interactions). To filter the network we use an algorithm from the [Prize-Collecting Steiner Forest (PCSF)]() R package that reduces the graph while keeping the proteins and/or metabolites selected from above.
 
 ### Metabolites only
-We can take the up-regulated (logFC>1.5) metabolites in tumors and map them to proteins, but the reduced network tends to be quite small, as many metabolites fail to map to metabolic pathways.
+
+We can take the metabolites that have negative loadings (i.e. they're more predictive of tumor than normal) and use the quantities from those loadings to weight the molecules in a network. Then we can run PCSF to reduce the network below.
 
 ```{r metabolites only, warning=FALSE,message=FALSE}
-##here we filter for significance AND fold change
-#up_prot=subset(pres,signif)|>
-#  subset(logFC>1.5)
-
-#here we only filter for fold change
-#up_met=subset(mres,logFC>0)
-
-#weights<-c(up_prot$logFC,up_met$logFC)
-#names(weights)<-c(rownames(up_prot),rownames(up_met))
-
 mnet<-PCSF_rand(ppi,metweights,n=10,b=30,w=5)
 plot.PCSF(mnet)
 
 ```
 
+The result is a small network (there were not that many metabolites that were known and had associated pathways) with the metabolites in green and the inferred protein interactions as triangles in blue. 
+
+
 ### Metabolites and proteins
 
-However, we can add differentially expressed proteins to the list of 'weights' in the algorithm to expand the network.
+However, we can add in the protein loadings as well (selecting the negative ones and taking the absolute value) to re-run the network analysis in an integrated fashion. 
 
 ```{r met and protein,message=F,warning=F}
 ##now get the weights and add to PCSF
@@ -374,6 +373,17 @@ However, we can add differentially expressed proteins to the list of 'weights' i
 nres<-PCSF_rand(ppi,c(metweights,protweights),n=10,b=30)
 plot.PCSF(nres)
 
+library(topGO)
+
+gene_universe <- V(ppi)$name
+res <- enrichment_analysis(nres, mode=1, gene_universe)
+
+plot(nres$subnet, edge_width = 8, node_size = 30, node_label_cex = 1)
 
 ```
+
+
+## Summary
+
+Integrating metabolomics with other omics has numerous approaches, and this workshop only scratches the surface. However, we hope that it introduces some tools that can be further explored for your own analysis. 
 
