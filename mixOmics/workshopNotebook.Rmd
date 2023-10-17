@@ -21,10 +21,12 @@ The first thin you'll need to do is get RStudio. There are two ways to do this:
 
 Once you have a working R installation, we need to first install the required packages. This will require running the following `install.packages` commands by copying and pasting the text below. Some packages need to be installed from elsewhere such as [Bioconductor](http://bioconductor.org) or [GitHub](http://github.com). These are other repositories where packages are kept.
 
+This requires pasting the commands below under the `if(FALSE)` clause
+
 Lastly we read in a final set of commands that we have written ahead of this workshop using the `source` command. This will read in commands from a remote document indicated by the URL. You can take a peak at the script [here](https://github.com/sgosline/metabolomics-integration/blob/main/mixOmics/metabUtils.R), which contains some functions we created to help with the integration tasks below.
 
 
-```{r load libraries, warning=FALSE, message=FALSE,echo=FALSE}
+```{r load libraries, warning=FALSE, message=FALSE}
 if(FALSE){ ##copy and paste below
   install.packages('readr')
   install.packages('readxl')
