@@ -195,87 +195,6 @@ mixOmics::plotIndiv(ppca,
 As you can see the tumor samples are far more distinct from normal in the proteomics data compared to the metabolomics. However, there is clear separate in each, which begs the question 'white proteins and metabolites are changed in tumor samples?' 
 
 
-
-```{!r diffex, warning=FALSE,message=FALSE}
-
-## Identifying proteins/metabolites of interest
-
-### Differential expression analysis
-
-#There is clear division between the two sample types in both the metabolomics and proteomics data. We can now use standard differential expression and pathway enrichment tools to identify those values that are distinct across samples. We leverage the package [LIMMA](https://bioconductor.org/packages/release/bioc/html/limma.html) which asks which molecules are changing more than we'd expect by chance. 
-
-#these are the normal samples
-norms <- subset(samps,tumor_normal=='normal')|>
-  dplyr::select(case_id)|>
-  distinct()
-#these are the tumor samples
-tums <-subset(samps,tumor_normal=='tumor')|>
-  dplyr::select(case_id)|>
-  distinct()
-
-##use the matrices from above to identify stats forproteins
-##select out which patients are tumor vs normal for our comparison
-pt<-intersect(tums$case_id,colnames(pmat))
-pn<-intersect(norms$case_id,colnames(pmat))
-
-##we map the samples to a set of 'factors'
-fac <- factor(rep(c(2,1),c(length(pt),length(pn))))
-design <- model.matrix(~fac)
-#print(design)
-pfit <- lmFit(pmat[,c(pt,pn)], design)
-pfit <- eBayes(pfit)
-
-print(topTable(pfit, coef=2))
-```
-
-
-
-```{!r diffex plot proteins,warning=FALSE}
-Now that we have the most significantly altered proteins we can plot them below.
-pres <- topTable(pfit, coef=2, number=Inf, sort.by="P")|>
-  mutate(signif=(adj.P.Val<0.00001))
-
-ggplot(pres,aes(x=logFC,y=-1*log10(adj.P.Val),col=signif))+geom_point()+
-  ggtitle("Significant proteins in tumor vs normal")
-```
-
-
-```{!r metab diffex,warning=FALSE}
-Now we can do the same for metabolites
-
-## use the matrices fro above to identify stats for the metabolites
-mt<-intersect(tums$case_id,colnames(mmat))
-mn<-intersect(norms$case_id,colnames(mmat))
-
-##convert the columns to factors
-fac <- factor(rep(c(2,1),c(length(mt),length(mn))))
-
-#build a design matrix to represent the experiment
-design <- model.matrix(~fac)
-#print(design)
-
-##call the model fitting commands
-mfit <- lmFit(mmat[,c(mt,mn)], design)
-mfit <- eBayes(mfit)
-
-#the toptable command prints out the top molecules that are altered
-print(topTable(mfit, coef=2))
-```
-
-
-```{!r plot top metab limma,message=FALSE,warning=FALSE}
-Now that we see the top metabolites we can also visualize them in a volcano plot
-
-mres <- topTable(mfit, coef=2, number=Inf, sort.by="P")|>
-  mutate(signif=(adj.P.Val<0.01))
-
-ggplot(mres,aes(x=logFC,y=-1*log10(adj.P.Val),col=signif))+geom_point()+
-  ggtitle("Significant metabolites in tumor vs normal")
-Now that we have a list of the metabolites and proteins we can do numerous analyses, some of which examine below.
-
-```
-
-
 ## Partial least squares regression analysis
 
 There is clear division between the two sample types in both the metabolomics and proteomics data. We can now use standard differential expression and pathway enrichment tools to identify those values that are distinct across samples. There are multiple ways to do this but for now we will focus on using the dimensionality reduction techniques employed in `mixOmics`. 
@@ -332,7 +251,7 @@ Beyond the selection of individual proteins and metabolites, we want to evaluate
 ##load in metabolic network
 
 ##i stored the network on github to save time
-fullNetwork<-readr::read_csv('kegg_paths_2024.csv')
+fullNetwork<-readr::read_csv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/kegg_paths_2024.csv')
 
 ##remove the pathways that dont contain the metabolites of interest
 withPaths<-subset(fullNetwork,from%in%metloads$compoundId)|>
@@ -372,13 +291,6 @@ However, we can add in the protein loadings as well (selecting the negative ones
 
 nres<-PCSF_rand(ppi,c(metweights,protweights),n=10,b=30)
 plot.PCSF(nres)
-
-library(topGO)
-
-gene_universe <- V(ppi)$name
-res <- enrichment_analysis(nres, mode=1, gene_universe)
-
-plot(nres$subnet, edge_width = 8, node_size = 30, node_label_cex = 1)
 
 ```
 
