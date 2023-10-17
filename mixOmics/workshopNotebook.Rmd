@@ -1,59 +1,74 @@
 ---
-title: "Metabolomics integration"
+title: "Metabolomics integration demonstration for MANA 2023"
 author: Sara Gosline (sara.gosline@pnnl.gov)
 output:
   html_document:
     df_print: paged
+    toc: true
+    toc_depth: 2
 ---
 
-The goal of this document is to walk people through an end-to-end scenario using metabolomics to integrate with other omics data types. For the purposes of this work we are using metabolomics and proteomics data from the [CPTAC3 study on glioblastoma multiforme](). 
+The goal of this document is to walk people through an end-to-end scenario using metabolomics to integrate with other omics data types. For the purposes of this work we are using metabolomics and proteomics data from the [CPTAC3 study on glioblastoma multiforme](https://www.sciencedirect.com/science/article/pii/S1535610821000507). 
 
-## Get to RStudio Server
+## Get RStudio
 
-To run these commands we recommend RStudio, which you can install on your own machine, or run on the RStudio cloud using a free account. [put details here]
+The first thin you'll need to do is get RStudio. There are two ways to do this:
+
+1. Download [R Studio Desktop](https://posit.co/download/rstudio-desktop/), which allows you to run everything on your local machine. 
+2. Register for a [free account](https://login.posit.cloud/register) so you can get access. Then create a 'New Workspace' and within that start a 'New Project'. From here you will get a terminal that will look identical to an RStudio window on your local machine. 
 
 ## Install packages, load data
-First we need to install the required packages. Try to run these commands ahead of the workshop as they can take a while.
+
+Once you have a working R installation, we need to first install the required packages. This will require running the following `install.packages` commands by copying and pasting the text below. Some packages need to be installed from elsewhere such as [Bioconductor](http://bioconductor.org) or [GitHub](http://github.com). These are other repositories where packages are kept.
+
+Lastly we read in a final set of commands that we have written ahead of this workshop using the `source` command. This will read in commands from a remote document indicated by the URL. You can take a peak at the script [here](https://github.com/sgosline/metabolomics-integration/blob/main/mixOmics/metabUtils.R), which contains some functions we created to help with the integration tasks below.
+
 
 ```{r load libraries, warning=FALSE, message=FALSE,echo=FALSE}
-##biodondoctur has a lot of biology related packages
+if(FALSE){ ##copy and paste below
+  install.packages('readr')
+  install.packages('readxl')
+  install.packages('tidyr')
+  install.packages("dplyr")
 
-checkAndLoad<-function(libname,bc=FALSE){
-  print(libname)
-  if(!require(libname,character.only=TRUE)){
-    if(bc){
-      BiocManager::install(libname,character.only=TRUE)
-    }else{
-      install.packages(libnamecharacter.only=TRUE)
-    }
-    library(libname,character.only=TRUE)
-  }
-}
-##readr helps reading files
-lapply(c('readr','readxl','tidyr','limma','ggfortify','dplyr','remotes'),function(x) checkAndLoad(x))
-lapply(c('mixOmics'),function(x) checkAndLoad(x,TRUE))
+  ##bioconductor has a lot of biology related packages
+  install.packages("BiocManager")
+  BiocManager::install('mixOmics')
+#  BiocManager::install("limma")
+  BiocManager::install('org.Hs.eg.db')
+  BiocManager::install('topGO')
+  BiocManager::install("KEGGgraph")
 
-
-if(!require(PCSF)){
+  ##remotes helps you install from github
+  install.packages('remotes')
   remotes::install_github('sgosline/PCSF')
-  library(PCSF)
-  }
+}
 
+###now we load the libraries
+library(readr)
+library(readxl)
+library(tidyr)
+#library(limma)
+library(dplyr)
+library(mixOmics)
+library(PCSF)
 
-source("metabUtils.R")
+source("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/metabUtils.R")
 ```
 
-These packages are required for the following analyses. 
+Once all the installations are complete we can now move to processing the data.
 
-## Load data
-First we have to load the data. We store the metabolomics and proteomics data in files that are easily machine readable. Ultimately we map them to long tables for facile joining and visualization and plotting later on.
+## Load and summarize data
 
+First we have to load the data. We store the metabolomics and proteomics data in files that are easily machine readable and can be read in through the `readr` library as shown below. These types of data are often stored in 'wide' form, where each row represents a protein or metabolite and each column represents a sample. I generally move these to 'long' form as it makes it easier to analyze, plot, and summarize.
 
-```{r load data,message=FALSE, warning=FALSE}
+```{r load metabolomics data,message=FALSE, warning=FALSE}
 ##metabolomics
 ##this reads in the glioblastoma metabolites
 met <- readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/metabolome_pnnl.v4.0.20200430.tsv")
 
+
+###here we read in metabolomic data, that also has the KEGG id included
 kegg_met<-met|>
   dplyr::select(KEGG,Metabolite)|>
   distinct()|>
@@ -65,30 +80,44 @@ kegg_met<-met|>
   mutate(compoundId=paste('cpd',KEGG,sep=':'))
 
 cols<-union(grep("C3",colnames(met)),grep('PT',colnames(met)))
-met<- met|>tidyr::pivot_longer(cols=cols,names_to='CPTAC Participant ID',values_to='intensity')|>
+
+#now we move to long format
+met<- met|>
+  tidyr::pivot_longer(cols=cols,names_to='CPTAC Participant ID',values_to='intensity')|>
   dplyr::select(-KEGG)
+
+##here is what long format looks like
 print(head(met))
 
-mmat<-met|>
-  tidyr::pivot_wider(names_from='CPTAC Participant ID',values_from='intensity')|>
-  tibble::column_to_rownames('Metabolite')
+#we can use R to do some summary statistics
+mcounts<-met|>
+    subset(!is.na(intensity))|>
+    group_by(`CPTAC Participant ID`)|>
+    summarize(metabolites=n_distinct(Metabolite))
 
-missingm<-which(apply(mmat,1,function(x) any(is.na(x))))
-if(length(missingm)>0)
-  mmat<-mmat[-missingm,]
+##and plot a summary
+mcounts|>
+  ggplot(aes(x=metabolites))+geom_histogram()+ggtitle('Number of metabolites per sample')
 
 
 ```
 
-```{r load samples info}
+Next we can read in the sample information to get relevant metadata about the samples and separate out the tumor vs. normal samples in our visualizations shown above. This again is a good sanity check on our data.
+
+```{r load samples info,warning=FALSE,message=FALSE}
 ##need this to map the samples
 samps<-readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/sample_info.v4.0.20200430.tsv.gz")
 protmapping <- readr::read_csv("GBM_TMT_plexes.csv")
 print(head(protmapping))
+
+mcounts|>left_join(protmapping)|>
+  ggplot(aes(x=metabolites,fill=Type))+geom_histogram(position='dodge')+ggtitle("Number of metabolites per patient sample")
+
 ```
 
+Now we can read in the proteomics data and join it with the sample information to recreate the plot for proteins. 
 
-```{r load proteomics info}
+```{r load proteomics info,warning=FALSE,message=FALSE}
 ##now the proteomics
 prot<-readr::read_tsv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/GBM_PanCan_Proteome_UMich_UniProt_Sinai_observed_0205.tsv')|>
   tidyr::pivot_longer(cols=starts_with('CPT'),names_to='Aliquot ID',values_to='intensity')|>
@@ -98,28 +127,45 @@ prot<-readr::read_tsv('https://raw.githubusercontent.com/sgosline/metabolomics-i
 
 print(head(prot))
 
+#we can use R to do some summary statistics
+pcounts<-prot|>
+    subset(!is.na(intensity))|>
+    group_by(`CPTAC Participant ID`,Type)|>
+    summarize(proteins=n_distinct(ApprovedGeneSymbol))
+
+pcounts
+
+##and plot a summary
+pcounts|>
+  ggplot(aes(x=proteins,fill=Type,alpha=0.5))+geom_density()+ggtitle('Number of proteins per sample')
+
+```
+
+Now that we have the data loaded and can visualize it, we can no do more advanced integration and analysis.
+
+
+## Unsupervised clustering of data
+
+The first step in exploring any dataset is unsupervised clustering. This helps us suss out any batch effects of the data, and evaluate any other patterns that might arise. We can cluster the data using principal component analysis (PCA) or other dimensionality reduction tools such as tSNE or UMAP. They each have their biases, so we only show PCA here. PCA is included in the [mixOmics](https://bioconductor.org/packages/release/bioc/html/mixOmics.html) R package, which we leverage here. 
+
+```{r unsupervised clustering,warning=FALSE,message=FALSE}
+
+##filter the sample variables and data to make sure they match 
+## sample information eeds to be separtea
+smat<-samps|>
+  tibble::column_to_rownames('case_id')
+
+
+mmat<-met|>
+  tidyr::pivot_wider(names_from='CPTAC Participant ID',values_from='intensity')|>
+  tibble::column_to_rownames('Metabolite')
+
+
 ##move data to matrix for ploting and analysis
 pmat<-prot|>
   dplyr::select(ApprovedGeneSymbol,intensity,`CPTAC Participant ID`)|>
   tidyr::pivot_wider(names_from='CPTAC Participant ID',values_from='intensity')|>
   tibble::column_to_rownames('ApprovedGeneSymbol')
-
-missingp<-which(apply(pmat,1,function(x) any(is.na(x))))
-if(length(missingp)>0)
-  pmat<-pmat[-missingp,]
-```
-
-
-## Unsupervised clustering of data
-
-The first step in exploring any dataset is unsupervised clustering. This helps us suss out any batch effects of the data, and evaluate any other patterns that might arise. We can cluster the data using principal component analysis (PCA) or other dimensionality reduction tools such as tSNE or UMAP. They each have their biases, so we only show PCA here. 
-
-
-```{r unsupervised clustering}
-
-##filter the sample variables and data to make sure they match
-smat<-samps|>
-  tibble::column_to_rownames('case_id')
 
 ppats<-intersect(rownames(smat),colnames(pmat))
 mpats<-intersect(rownames(smat),colnames(mmat))
@@ -146,63 +192,95 @@ mixOmics::plotIndiv(ppca,
 
 
 ```
-As you can see the tumor samples are far more distinct from normal 
+As you can see the tumor samples are far more distinct from normal in the proteomics data compared to the metabolomics. However, there is clear separate in each, which begs the question 'white proteins and metabolites are changed in tumor samples?' 
 
-##Differential expression and pathway erichment
 
-There is clear division between the two sample types in both the metabolomics and proteomics data. We can now use standard differential expression and pathway enrichment tools to identify those values that are distinct across samples.
 
-```{r diffex}
+```{!r diffex, warning=FALSE,message=FALSE}
 
+## Identifying proteins/metabolites of interest
+
+### Differential expression analysis
+
+#There is clear division between the two sample types in both the metabolomics and proteomics data. We can now use standard differential expression and pathway enrichment tools to identify those values that are distinct across samples. We leverage the package [LIMMA](https://bioconductor.org/packages/release/bioc/html/limma.html) which asks which molecules are changing more than we'd expect by chance. 
+
+#these are the normal samples
 norms <- subset(samps,tumor_normal=='normal')|>
   dplyr::select(case_id)|>
   distinct()
+#these are the tumor samples
 tums <-subset(samps,tumor_normal=='tumor')|>
   dplyr::select(case_id)|>
   distinct()
 
 ##use the matrices from above to identify stats forproteins
 ##select out which patients are tumor vs normal for our comparison
-
 pt<-intersect(tums$case_id,colnames(pmat))
 pn<-intersect(norms$case_id,colnames(pmat))
+
+##we map the samples to a set of 'factors'
 fac <- factor(rep(c(2,1),c(length(pt),length(pn))))
 design <- model.matrix(~fac)
 #print(design)
 pfit <- lmFit(pmat[,c(pt,pn)], design)
 pfit <- eBayes(pfit)
-# print(topTable(fit, coef=2))
+
+print(topTable(pfit, coef=2))
+```
+
+
+
+```{!r diffex plot proteins,warning=FALSE}
+Now that we have the most significantly altered proteins we can plot them below.
 pres <- topTable(pfit, coef=2, number=Inf, sort.by="P")|>
   mutate(signif=(adj.P.Val<0.00001))
 
-
 ggplot(pres,aes(x=logFC,y=-1*log10(adj.P.Val),col=signif))+geom_point()+
   ggtitle("Significant proteins in tumor vs normal")
+```
 
+
+```{!r metab diffex,warning=FALSE}
+Now we can do the same for metabolites
 
 ## use the matrices fro above to identify stats for the metabolites
-
 mt<-intersect(tums$case_id,colnames(mmat))
 mn<-intersect(norms$case_id,colnames(mmat))
+
+##convert the columns to factors
 fac <- factor(rep(c(2,1),c(length(mt),length(mn))))
+
+#build a design matrix to represent the experiment
 design <- model.matrix(~fac)
 #print(design)
+
+##call the model fitting commands
 mfit <- lmFit(mmat[,c(mt,mn)], design)
 mfit <- eBayes(mfit)
-# print(topTable(fit, coef=2))
+
+#the toptable command prints out the top molecules that are altered
+print(topTable(mfit, coef=2))
+```
+
+
+```{!r plot top metab limma,message=FALSE,warning=FALSE}
+Now that we see the top metabolites we can also visualize them in a volcano plot
+
 mres <- topTable(mfit, coef=2, number=Inf, sort.by="P")|>
   mutate(signif=(adj.P.Val<0.01))
 
 ggplot(mres,aes(x=logFC,y=-1*log10(adj.P.Val),col=signif))+geom_point()+
   ggtitle("Significant metabolites in tumor vs normal")
+Now that we have a list of the metabolites and proteins we can do numerous analyses, some of which examine below.
 
 ```
 
-## mixOmics Integration and variable selection
 
-Now that we analyzed the data separately we can evalute it in an integrated fashion using mixOmics. Hopefully Javi can provide some code that does this.
+## Partial least squares regression analysis
 
-```{r mixomics}
+There is clear division between the two sample types in both the metabolomics and proteomics data. We can now use standard differential expression and pathway enrichment tools to identify those values that are distinct across samples. There are multiple ways to do this but for now we will focus on using the dimensionality reduction techniques employed in `mixOmics`. 
+
+```{r mixomics, messsage=FALSE,warning=FALSE,error=FALSE}
 
 ##To use mixomics we first must create a list of matrices
 osamps<-intersect(samps$case_id,intersect(colnames(pmat),colnames(mmat)))
@@ -219,19 +297,16 @@ cor(res1.pls$variates$X, res1.pls$variates$Y)
 
 diablo.met <- block.plsda(X, Y, ncomp = 5, design = design)
 
-
-#ncomp <- perf.diablo.tcga$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
 plotDiablo(diablo.met)
-
 
 ##can we use this to reduce the features?
 plotLoadings(diablo.met,ndisplay=100)
 
 
 ```
-THis plots all the loadings used to distinguish the different sample types. If we want to focus on which metabolites and proteins are most impactful we can examine those that are most negative.
+This plots all the loadings used to distinguish the different sample types. If we want to focus on which metabolites and proteins are most impactful we can examine those that are most negative.
 
-```{r sig loadings}
+```{r sig loadings, warnings=FALSE,message=FALSE}
   metloads<-subset(selectVar(diablo.met)$metabolomics$value,value.var< (-.05))|>
   as.data.frame()|>
   tibble::rownames_to_column('Metabolite')|>
@@ -244,24 +319,23 @@ THis plots all the loadings used to distinguish the different sample types. If w
   protweights<-abs(protloads$value.var)
   names(protweights)<-rownames(protloads)
 
+  print(paste("Selected",length(protweights),'proteins and',length(metweights),'metabolites for subsequent analysis'))
+  
 ```
 ## Network-based integration with OmicsIntegrator
-Now we can evaluate network approaches. For this approach we merge KEGG pathways with known protein-protein interaction from STRING. This generates a huge hairball of a network.
 
-```{r network approacches, warning=FALSE,error=FALSE,message=FALSE}
+Beyond the selection of individual proteins and metabolites, we want to evaluate how these interact with each other in the cell. To do so we collate two different biological network resources. First, we download the data from the [STRING database](http://string-db.org) that includes all physical interactions between proteins and their relative confidence score. Second, we use the [KEGGgraph](https://www.bioconductor.org/packages/release/bioc/html/KEGGgraph.html) R package to retrieve all the [KEGG pathways](https://www.kegg.jp/kegg/pathway.html) that include the detected metabolites.
+
+
+```{r network assumbly, warning=FALSE,error=FALSE,message=FALSE}
 
 ##load in metabolic network
 allkeggpaths<-readr::read_csv('https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/keggPathList.csv')|>
   subset(Entry!='Entry')
 
 
-##here we get the metabolic network for those features that are significant
-#sigmet<-subset(mres,signif)|>rownames()
-#sigkegg<-subset(kegg_met,Metabolite%in%sigmet)
-
 ##this is a full network for all proteins/metabolites
-fullNetwork<-getMetNetworksForNodes(metloads$compoundId,allkeggpaths$Entry)
-
+fullNetwork<-getMetNetworksForNodes(setdiff(metloads$compoundId,NA),allkeggpaths$Entry)
 
 fixedNetwork<-mapNetworkToHGNC(fullNetwork,kegg_met)
 
@@ -269,7 +343,7 @@ ppi <- addNetworkToProts(fixedNetwork)
 plot(ppi)
 ```
 
-This is not really interpretable, regardless of where the metabolites and proteins lie. So we can use an algorithm, called Prize-Collecting Steiner Forest (PCSF) that reduces the graph while keeping the differentially expressed proteins and/or metabolites.
+The result is a hairball that is difficult to interpret, as there are too many nodes (molecules) and edges (interactions). To filter the network we use an algorithm from the [Prize-Collecting Steiner Forest (PCSF)]() R package that reduces the graph while keeping the proteins and/or metabolites selected from above.
 
 ### Metabolites only
 We can take the up-regulated (logFC>1.5) metabolites in tumors and map them to proteins, but the reduced network tends to be quite small, as many metabolites fail to map to metabolic pathways.
@@ -294,7 +368,7 @@ plot.PCSF(mnet)
 
 However, we can add differentially expressed proteins to the list of 'weights' in the algorithm to expand the network.
 
-```{r met and protein}
+```{r met and protein,message=F,warning=F}
 ##now get the weights and add to PCSF
 
 nres<-PCSF_rand(ppi,c(metweights,protweights),n=10,b=30)
