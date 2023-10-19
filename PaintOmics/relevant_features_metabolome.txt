@@ -1,0 +1,42 @@
+Metabolite Name
+Asparagine
+Gamma amino butyric acid
+Isoleucine
+Leucine
+Lysine
+proline
+Serine
+Threonine
+Valine
+3-dehydroshikimate
+a-Ketoglutaric acid
+Glyceric acid
+Malic acid
+Shikimic acid
+Succinic acid
+Glucose
+Caffeoyl shikimic acid
+Coumaroyl aspartic acid
+Coumaroyl shikimic acid
+Coumaroyl tryptophan
+Coumaroyl tyrosine
+Feruloyl tyrosine
+Feruloylquinic acid
+Gallic acid hexoside
+Hydroxybenzoic acid hexoside
+Hydroxybenzoic acid hexoside
+Hydroxycoumarin hexuronide
+Hydroxycoumarin hexuronide
+Isoleucine
+Norleucine
+Oleanolic acid-3-hexopyranoosylpentopyranosylhexopyrauronoside
+Pipecolinic acid
+Quercetin
+Shikimate-3-phosphate
+Aconitic acid
+Fumaric acid
+Isocitric acid
+Oxalic acid
+Pyruvic acid
+Oxaloacetate
+Dihydrokaempferol
