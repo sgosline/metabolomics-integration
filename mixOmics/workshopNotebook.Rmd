@@ -1,11 +1,14 @@
 ---
 title: "Metabolomics integration demonstration for MANA 2023"
-author: Sara Gosline (sara.gosline@pnnl.gov)
+author: "Sara Gosline (sara.gosline@pnnl.gov)"
 output:
   html_document:
     df_print: paged
-    toc: true
+    toc: yes
     toc_depth: 2
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
 ---
 
 The goal of this document is to walk people through an end-to-end scenario using metabolomics to integrate with other omics data types. For the purposes of this work we are using metabolomics and proteomics data from the [CPTAC3 study on glioblastoma multiforme](https://www.sciencedirect.com/science/article/pii/S1535610821000507). 
@@ -39,7 +42,7 @@ if(FALSE){ ##copy and paste below
 #  BiocManager::install("limma")
   BiocManager::install('org.Hs.eg.db')
   BiocManager::install('topGO')
-  BiocManager::install("KEGGgraph")
+  BiocManagxer::install("KEGGgraph")
 
   ##remotes helps you install from github
   install.packages('remotes')
@@ -109,7 +112,7 @@ Next we can read in the sample information to get relevant metadata about the sa
 ```{r load samples info,warning=FALSE,message=FALSE}
 ##need this to map the samples
 samps<-readr::read_tsv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/sample_info.v4.0.20200430.tsv.gz")
-protmapping <- readr::read_csv("GBM_TMT_plexes.csv")
+protmapping <- readr::read_csv("https://raw.githubusercontent.com/sgosline/metabolomics-integration/main/mixOmics/GBM_TMT_plexes.csv")
 print(head(protmapping))
 
 mcounts|>left_join(protmapping)|>
@@ -276,7 +279,7 @@ The result is a hairball that is difficult to interpret, as there are too many n
 We can take the metabolites that have negative loadings (i.e. they're more predictive of tumor than normal) and use the quantities from those loadings to weight the molecules in a network. Then we can run PCSF to reduce the network below.
 
 ```{r metabolites only, warning=FALSE,message=FALSE}
-mnet<-PCSF_rand(ppi,metweights,n=10,b=30,w=5)
+mnet<-PCSF_rand(ppi,metweights,n=5,b=30,w=5)
 plot.PCSF(mnet)
 
 ```
