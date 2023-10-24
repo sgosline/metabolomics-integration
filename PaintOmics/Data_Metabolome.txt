@@ -1,0 +1,173 @@
+Metabolite Name	Log FC
+Alanine	-0.39
+Asparagine	1.11
+Aspartic acid	-0.53
+Citrulline	1.81
+Gamma amino butyric acid	1.20
+Glutamic acid	-0.51
+Glutamine	0.70
+Glycine	0.91
+Isoleucine	2.17
+Leucine	2.06
+Lysine	1.80
+Methionine	-0.52
+Phenylalanine	-0.68
+proline	1.08
+Pyroglutamic acid	0.86
+Serine	2.01
+Threonine	1.49
+Tyramine	0.24
+Tyrosine	0.18
+Valine	1.60
+3-dehydroshikimate	7.94
+a-Ketoglutaric acid	-2.08
+Aconitic acid	-3.30
+Ascorbic acid	0.23
+Citric acid	0.04
+dehydroascorbic acid	0.03
+Fumaric acid	-2.06
+Glyceric acid	-1.39
+Glycolic acid	-0.09
+Isocitric acid	-1.05
+Lactic acid	0.06
+Malic acid	-1.24
+Oxalic acid	-1.76
+Pyruvic acid	-2.67
+Shikimic acid	7.86
+Succinic acid	-1.14
+Tartaric acid	0.66
+Threonic acid	-0.13
+Arachidic acid	0.44
+Palmitic acid	0.15
+Pelargonic acid	-0.04
+Stearic acid	0.12
+"1,6-Anhydroglucose"	0.28
+Arabitol	4.62
+Gentiobiose	0.12
+Mannosylglycerate	0.20
+erythronic acid lactone	0.14
+Fructose	0.77
+Fructose-6-phosphate	0.28
+Galactitol	0.27
+Galactosamine	1.78
+Galactose	0.30
+Glucose	2.32
+Glycerol	-0.12
+Inositol	0.34
+Lactose	0.08
+Lyxose	0.26
+Maltitol	0.01
+Maltose	-0.12
+Mannitol	0.04
+Mannose	0.39
+Melibiose	0.49
+Meso erythritol	-0.07
+phosphogluconic acid	0.26
+Ribose	0.06
+Sorbitol	-0.59
+sorbose	0.85
+Sucrose	0.09
+Trehalose	0.38
+Xylitol	0.37
+Xylonic acid	0.42
+Caffeic acid	-1.08
+Ferulic acid	-0.27
+gallic acid	0.26
+Putrescine	0.25
+Adenine	-0.55
+Adenosine	0.41
+Nicotinic acid	-0.05
+Serotonin	0.23
+Urea	0.13
+Phosphate	-0.46
+2-Caffeoylisocitric acid	-0.43
+2-Caffeoylisocitric acid	-0.40
+2-Naphthylamine	0.36
+2-O-Methylguanosine	0.54
+3-Adenosine monophosphate	0.11
+3-Methoxytyramine	0.18
+Adenosine	0.27
+Akebonoic acid-3-hexopyranosylpentopyranosylhexopyrauronoside	-0.25
+Amarantholidoside IV	-0.92
+Arjunolic acid-3-hexopyrauronosideglycoside	-2.76
+Arjunolic acid-3-hexoside-28-glycoside	-0.46
+Benzyl hexosylpentoside	0.54
+Benzyl hexosylpentoside	0.81
+Blumenol-C-hexoside	-0.45
+Caffeoyl aspartic acid	-0.37
+Caffeoyl shikimic acid	-0.56
+Caffeoyl glutaric acid	-0.73
+Caffeoyl quinic acid	-0.58
+Caffeoyl tyrosine	-1.15
+Coumaroyl aspartic acid	-1.48
+Coumaroyl shikimic acid	-1.43
+Coumaroyl glutamine	-0.35
+Coumaroyl quinic acid	-0.49
+Coumaroyl tryptophan	-1.00
+Coumaroyl tyrosine hexoside	0.82
+Coumaroyl tyrosine	-2.04
+Cytidine	0.64
+Diferuloyl hexose	-0.87
+Dihydrojasmonic acid hexoside	-0.36
+Dimethyl-en-dioic acid hexoside	-0.09
+Ferulic acid (1-methylerythritol)hexoside	-0.65
+Ferulic acid-O-hexoside	0.67
+Ferulic acid-O-rhamnosideglucoside	-0.68
+Feruloyl aspartic acid	-0.45
+Feruloyl dopamine	-0.47
+Feruloyl glutamic acid	-0.32
+Feruloyl hexoside	-0.24
+Feruloyl octopamine	-0.08
+Feruloyl tyramine	-0.29
+Feruloyl tyrosine	-1.06
+Feruloyl-O-malonylrhamnosideglucoside	-1.32
+Feruloylhexose-trihydroxy-3-methylbutylglycoside	-0.91
+Feruloylquinic acid	-1.07
+Gallic acid hexoside	2.99
+Geranyl-O-pentosylhexoside	-0.01
+Glutathione oxidized	0.28
+Guanosine	0.08
+Hederagenin hexoside glycoside	-0.72
+Hederagenin-3-hexopyranosylhexopyrauronoside	-1.17
+Hexapyranosyloxy-hydroxyphenylpropanoic acid	-0.04
+Hydroxybenzoic acid hexoside	1.48
+Hydroxybenzoic acid hexoside	2.36
+Hydroxycoumarin hexuronide	-1.31
+Hydroxycoumarin hexuronide	-1.53
+Hydroxyphenylethyl glycoside	0.00
+Hypoxanthine pentoside	0.09
+Indoxyl pentosylhexoside	-0.46
+Isocucurbic acid hexoside	-0.49
+Isoleucine	1.70
+Isorhamnetin	-1.09
+Kaempferol	-0.40
+Kynurenic acid	-0.30
+Kynurenine	-0.16
+Laricesiresinol-O-hexoside	-0.78
+Medicagenic acid-3-hexopyrauronosylhexopyranoside dicarboxylic acid ester	-1.20
+Medicagenic acid-3-pentopyranosylhexopyranosylhexopyrauronoside	-0.94
+Medicagenic acid-3-pentopyranosylhexopyrauronoside	-1.13
+Nicotinamide adenine dinucleotide	0.32
+Nor-medicagenic acid glycoside	-1.59
+Norleucine	1.67
+Normedicagenic acid hexopyranosideglycoside	-0.68
+Normedicagenic acid-3-hexopyrauronosylpentopyranosylhexuropyranoside	-0.53
+Normedicagenic acid-3-hexoside-28-glycoside	-1.18
+O-acyl-hexoside	-0.97
+Oleanolic acid-3-hexopyranoosylpentopyranosylhexopyrauronoside	-2.09
+Oleanolic acid-3-hexopyranosylhexopyrauronoside	-0.98
+Oleanolic acid-3-hexopyrauronosylhexopyranosidedicarboxylic acid ester	-1.67
+Phenolic hexoside	-0.85
+Phenylethyl primeveroside	-0.37
+Pipecolinic acid	2.92
+Quercetin-O-glycoside	-0.39
+Quercetin-O-glycoside	-0.52
+Quercetin	-1.16
+Shikimate-3-phosphate	6.54
+Tuberonic acid hexoside	-0.80
+Vanillic acid hexoside	-0.41
+Oxaloacetate	-1.16
+Oxalosuccinate	0.05
+Naringenin	-0.41
+Dihydrokaempferol	-1.67
+Dihydroquercetin	-0.97
